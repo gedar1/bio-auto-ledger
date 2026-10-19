@@ -1,0 +1,69 @@
+{
+  "_comment": "tools es el catálogo declarativo del tipo de célula. La lista MCP efectiva solo incluye handlers registrados por CellServer; una tool sin handler real no es una capacidad anunciada. Los tipos sin registrar tampoco se ofrecen en stimulate_differentiation.",
+  "cells": [
+    {
+      "type": "sensory",
+      "description": "Para leer datos externos: web scraping, APIs REST, feeds RSS.",
+      "tools": ["scrape_url", "extract_links", "scrape_metadata"]
+    },
+    {
+      "type": "sensory_advanced",
+      "description": "Scraping avanzado con paginación, extracción de texto y análisis profundo.",
+      "parent": "sensory",
+      "tools": ["scrape_multiple_pages", "extract_text", "analyze_page"]
+    },
+    {
+      "type": "memory",
+      "description": "Para persistir y consultar información: bases de datos, archivos JSON, caché.",
+      "tools": ["db_query", "db_insert", "db_find"]
+    },
+    {
+      "type": "filesystem",
+      "description": "Operaciones de archivos: leer, escribir, copiar, mover, listar directorios.",
+      "tools": ["read_file", "write_file", "list_files"]
+    },
+    {
+      "type": "communication",
+      "description": "Envío de emails, WhatsApp y comunicación externa.",
+      "tools": ["send_email", "send_whatsapp"]
+    },
+    {
+      "type": "versioncontrol",
+      "description": "Operaciones Git: commit, push, pull, branches, log.",
+      "tools": ["git_status", "git_commit"]
+    },
+    {
+      "type": "http",
+      "description": "Peticiones HTTP avanzadas: GET, POST, PUT, DELETE, upload, download.",
+      "tools": ["http_get", "http_post"]
+    },
+    {
+      "type": "system",
+      "description": "Capacidad Híbrida: Ejecuta herramientas de sistema mediante CLIs (FFmpeg, ImageMagick, Pandoc).",
+      "tools": ["execute_cli", "check_command", "system_info"]
+    },
+    {
+      "type": "realtime",
+      "description": "Comunicación WebSocket bidireccional en tiempo real: iniciar servidor, enviar mensajes, broadcast, listar y desconectar clientes.",
+      "tools": [
+        "ws_start_server",
+        "ws_stop_server",
+        "ws_send",
+        "ws_broadcast",
+        "ws_list_clients",
+        "ws_disconnect_client"
+      ]
+    },
+    {
+      "type": "monitor",
+      "description": "Monitoreo inteligente: combina scraping, HTTP y sistema para vigilar servicios.",
+      "parent": "sensory",
+      "tools": ["http_get", "execute_cli", "check_command", "system_info"]
+    },
+    {
+      "type": "undifferentiated",
+      "description": "Estado inicial sin capacidades específicas. Solo puede recibir estímulos para diferenciarse.",
+      "tools": []
+    }
+  ]
+}
