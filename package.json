@@ -5,8 +5,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/core",
-    "packages/ledger"
+    "packages/core"
   ],
   "scripts": {
     "build": "tsc --build && node packages/core/scripts/copy-assets.js && npm --prefix packages/dashboard run build",

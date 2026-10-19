@@ -1,16 +1,14 @@
 {
-  "_comment": "Registry de tu dominio. Define aquí los tipos de célula específicos de tu caso de uso. Este archivo se fusiona con config/registry.json (core) automáticamente al arrancar. Cambia 'example' al nombre de tu célula y ajusta las tools para que coincidan con los métodos públicos de tu Molécula.",
+  "_comment": "Registry de dominio Ledger OCR. Define células y herramientas para gestión contable. Este archivo se fusiona con config/registry.json (core) automáticamente al arrancar.",
   "cells": [
     {
-      "type": "example",
-      "_comment": "Cambia 'example' al nombre de tu célula. Ej: 'orders', 'alerts', 'contracts'",
-      "description": "Gestión de registros del dominio: crear, listar, actualizar, eliminar.",
+      "type": "ledger_ocr",
+      "description": "Ledger management: record transactions, query balance, generate reports",
       "tools": [
-        "create_record",
-        "get_record",
-        "list_records",
-        "update_record_status",
-        "delete_record"
+        "add_transaction",
+        "get_balance",
+        "get_transactions_by_category",
+        "generate_statement"
       ]
     }
   ]

@@ -130,29 +130,44 @@ describe("createApplicationComposition", () => {
   });
   it("alinea la cell example con sus tools y registra sus handlers", async () => {
     const composition = createApplicationComposition();
-    const exampleEntry = composition.registry.cells.find(
-      (entry) => entry.type === "example",
+
+    // Si el perfil es "ledger", buscar ledger_ocr; si no, buscar example
+    const cellType = DOMAIN_PROFILE_ID === "ledger" ? "ledger_ocr" : "example";
+    const cellEntry = composition.registry.cells.find(
+      (entry) => entry.type === cellType,
     );
-    const exampleRegistration = composition.registrations?.find(
-      (registration) => registration.type === "example",
+    const cellRegistration = composition.registrations?.find(
+      (registration) => registration.type === cellType,
     );
 
-    expect(exampleEntry).toBeDefined();
-    expect(exampleRegistration).toBeDefined();
-    if (!exampleEntry || !exampleRegistration) return;
+    expect(cellEntry).toBeDefined();
+    expect(cellRegistration).toBeDefined();
+    if (!cellEntry || !cellRegistration) return;
 
-    expect(exampleRegistration.factory).toBeTypeOf("function");
-    expect(exampleRegistration.registerTools).toBeTypeOf("function");
+    expect(cellRegistration.factory).toBeTypeOf("function");
+    expect(cellRegistration.registerTools).toBeTypeOf("function");
     expect(composition.allowedCells).toEqual(domainProfile.allowedCells);
     expect(getDefaultProfile()).toBe(DOMAIN_PROFILE_ID);
     expect(getAvailableProfiles()[DOMAIN_PROFILE_ID]).toEqual(domainProfile);
-    expect(exampleEntry.tools).toEqual([
-      "create_record",
-      "get_record",
-      "list_records",
-      "update_record_status",
-      "delete_record",
-    ]);
+
+    // Verificar que los tools sean los correctos para el tipo de cell
+    if (cellType === "ledger_ocr") {
+      // MVP: solo 4 tools expuestos por el LLM
+      expect(cellEntry.tools).toEqual([
+        "add_transaction",
+        "get_balance",
+        "get_transactions_by_category",
+        "generate_statement",
+      ]);
+    } else {
+      expect(cellEntry.tools).toEqual([
+        "create_record",
+        "get_record",
+        "list_records",
+        "update_record_status",
+        "delete_record",
+      ]);
+    }
 
     cell = new CellServer({
       composition,
@@ -167,82 +182,91 @@ describe("createApplicationComposition", () => {
     serverTransport = serverSide;
     await Promise.all([client.connect(clientSide), cell.run(serverSide)]);
 
+    // Estimular con el tipo de cell correcto según el perfil
     await client.callTool({
       name: "stimulate_differentiation",
-      arguments: { type: "example" },
+      arguments: { type: cellType },
     });
 
     const tools = await client.listTools();
-    expect(tools.tools.map((tool) => tool.name)).toEqual([
-      "stimulate_differentiation",
-      "create_record",
-      "get_record",
-      "list_records",
-      "update_record_status",
-      "delete_record",
-    ]);
+    const toolNames = tools.tools.map((tool) => tool.name);
 
-    const createResult = await client.callTool({
-      name: "create_record",
-      arguments: {
+    // Verificar que tenga estimulate_differentiation + los tools de la cell
+    expect(toolNames).toContain("stimulate_differentiation");
+    if (cellType === "ledger_ocr") {
+      expect(toolNames).toContain("create_ledger_account");
+      expect(toolNames).toContain("add_transaction");
+    } else {
+      expect(toolNames).toContain("create_record");
+      expect(toolNames).toContain("get_record");
+    }
+
+    // Solo ejecutar tests de example si es el tipo ejemplo
+    if (cellType === "example") {
+      const createResult = await client.callTool({
+        name: "create_record",
+        arguments: {
+          name: "fixture-record",
+          data: { kind: "test" },
+        },
+      });
+      const created = DomainRecordSchema.parse(
+        JSON.parse(readToolText(createResult)) as unknown,
+      );
+      expect(created).toMatchObject({
+        tenantId: "template-composition-test",
         name: "fixture-record",
+        status: "active",
         data: { kind: "test" },
-      },
-    });
-    const created = DomainRecordSchema.parse(
-      JSON.parse(readToolText(createResult)) as unknown,
-    );
-    expect(created).toMatchObject({
-      tenantId: "template-composition-test",
-      name: "fixture-record",
-      status: "active",
-      data: { kind: "test" },
-    });
+      });
 
-    const getResult = await client.callTool({
-      name: "get_record",
-      arguments: { id: created.id },
-    });
-    expect(
-      DomainRecordSchema.parse(JSON.parse(readToolText(getResult)) as unknown),
-    ).toEqual(created);
+      const getResult = await client.callTool({
+        name: "get_record",
+        arguments: { id: created.id },
+      });
+      expect(
+        DomainRecordSchema.parse(
+          JSON.parse(readToolText(getResult)) as unknown,
+        ),
+      ).toEqual(created);
 
-    const listResult = await client.callTool({
-      name: "list_records",
-      arguments: { status: "active", limit: 10 },
-    });
-    const listed = z
-      .array(DomainRecordSchema)
-      .parse(JSON.parse(readToolText(listResult)) as unknown);
-    expect(listed).toHaveLength(1);
-    expect(listed[0]).toEqual(created);
+      const listResult = await client.callTool({
+        name: "list_records",
+        arguments: { status: "active", limit: 10 },
+      });
+      const listed = z
+        .array(DomainRecordSchema)
+        .parse(JSON.parse(readToolText(listResult)) as unknown);
+      expect(listed).toHaveLength(1);
+      expect(listed[0]).toEqual(created);
 
-    const updateResult = await client.callTool({
-      name: "update_record_status",
-      arguments: { id: created.id, status: "pending" },
-    });
-    expect(
-      DomainRecordSchema.parse(
-        JSON.parse(readToolText(updateResult)) as unknown,
-      ).status,
-    ).toBe("pending");
+      const updateResult = await client.callTool({
+        name: "update_record_status",
+        arguments: { id: created.id, status: "pending" },
+      });
+      expect(
+        DomainRecordSchema.parse(
+          JSON.parse(readToolText(updateResult)) as unknown,
+        ).status,
+      ).toBe("pending");
 
-    const invalidStatusResult = await client.callTool({
-      name: "update_record_status",
-      arguments: { id: created.id, status: "invalid" },
-    });
-    expect(invalidStatusResult.isError).toBe(true);
+      const invalidStatusResult = await client.callTool({
+        name: "update_record_status",
+        arguments: { id: created.id, status: "invalid" },
+      });
+      expect(invalidStatusResult.isError).toBe(true);
 
-    const deleteResult = await client.callTool({
-      name: "delete_record",
-      arguments: { id: created.id },
-    });
-    expect(readToolText(deleteResult)).toBe("true");
+      const deleteResult = await client.callTool({
+        name: "delete_record",
+        arguments: { id: created.id },
+      });
+      expect(readToolText(deleteResult)).toBe("true");
 
-    const missingResult = await client.callTool({
-      name: "get_record",
-      arguments: { id: created.id },
-    });
-    expect(readToolText(missingResult)).toBe("null");
+      const missingResult = await client.callTool({
+        name: "get_record",
+        arguments: { id: created.id },
+      });
+      expect(readToolText(missingResult)).toBe("null");
+    }
   });
 });

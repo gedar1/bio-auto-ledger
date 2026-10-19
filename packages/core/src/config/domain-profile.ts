@@ -26,18 +26,18 @@
 import type { ProfileConfig } from "./profileRegistry.js";
 
 /** Debe coincidir con TENANT_PROFILE en .env */
-export const DOMAIN_PROFILE_ID = "domain"; // ← Cambia al nombre de tu caso de uso
+export const DOMAIN_PROFILE_ID = "ledger"; // ← Ledger OCR
 
 export const domainProfile: ProfileConfig = {
   allowedCells: [
-    "example",  // ← tu célula de dominio (definida en domain-registry.json)
-    "memory",   // ← SQLite genérico para queries ad-hoc (siempre útil)
-    // "communication", // descomenta si envías emails o WhatsApp
-    // "http",          // descomenta si consumes APIs externas
-    // "filesystem",    // descomenta si lees/escribes archivos
-    // "versioncontrol",// descomenta si usas git
-    // "system",        // descomenta si ejecutas comandos CLI
+    "ledger_ocr", // ← célula de dominio para operaciones contables
+    "memory", // ← SQLite genérico para queries ad-hoc
+    "sensory", // ← Web scraping de datos externos
+    "http", // ← Consumo de APIs de terceros
+    "filesystem", // ← Lectura/escritura de archivos contables
+    "communication", // ← Notificaciones (email, alertas)
   ],
-  agentFile: "config/domain-agent.md",
-  description: "Perfil del dominio — personaliza esta descripción",
+  agentFile: "./domain-agent.md",
+  description:
+    "Ledger OCR — Automatización contable con OCR y análisis inteligente",
 };
